@@ -5,7 +5,6 @@
 //  Created by Martina Esposito on 22/03/22.
 //
 
-//import UIKit
 import SoundAnalysis
 import Foundation
 import AVFoundation
@@ -25,6 +24,9 @@ class SoundAnalyzerController: ObservableObject {
     init () {
         resultsObserver.delegate = self
         inputFormat = audioEngine.inputNode.inputFormat(forBus: 0)
+        
+        // In the initializer I instantiate SNAudioStremAnalyzer from the SoundAnalysis framework.
+        // This class allows us to analyze audio data streams
         analyzer = SNAudioStreamAnalyzer(format: inputFormat)
         
         startAudioEngine()
@@ -32,7 +34,11 @@ class SoundAnalyzerController: ObservableObject {
     
     private func startAudioEngine() {
         do {
+            //  I create the request that analyzes through a certain model ml the audio stream
+            
             let request = try SNClassifySoundRequest(mlModel: soundClassifier.model)
+            
+            // I pass the request to the analyzer
             try analyzer.add(request, withObserver: resultsObserver)
         } catch {
             print("Unable to prepare request: \(error.localizedDescription)")
@@ -40,6 +46,7 @@ class SoundAnalyzerController: ObservableObject {
         }
         
         audioEngine.inputNode.installTap(onBus: 0, bufferSize: 8000, format: inputFormat) { buffer, time in
+            // Dispatch the analize request in a Queue
             self.analysisQueue.async {
                 self.analyzer.analyze(buffer, atAudioFramePosition: time.sampleTime)
             }
@@ -80,3 +87,4 @@ class ResultsObserver: NSObject, SNResultsObserving, ObservableObject {
         }
     }
 }
+
